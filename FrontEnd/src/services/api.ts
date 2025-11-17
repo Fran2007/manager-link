@@ -122,8 +122,9 @@ class ApiService {
   }
 
   // Link methods
-  async getLinks(): Promise<Link[]> {
-    return this.request<Link[]>('/links');
+  async getLinks(folderId?: string): Promise<Link[]> {
+    const url = folderId ? `/links?folderId=${folderId}` : '/links';
+    return this.request<Link[]>(url);
   }
 
   async getLink(id: string): Promise<Link> {

@@ -3,7 +3,11 @@ import Link from "../models/Link.model.js";
 
 export const getFolders = async (req, res) => {
   try {
-    const folders = await Folder.find({ user: req.user.id }).sort({ createdAt: -1 });
+    // Usar lean() para objetos planos más rápidos y select() para solo campos necesarios
+    const folders = await Folder.find({ user: req.user.id })
+      .select('name createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(folders);
   } catch (error) {
     res.status(500).json({ message: "Error fetching folders", error: error.message });
@@ -12,16 +16,22 @@ export const getFolders = async (req, res) => {
 
 export const getFolder = async (req, res) => {
   try {
-    const folder = await Folder.findOne({ _id: req.params.id, user: req.user.id });
+    // Optimizar: obtener solo campos necesarios y usar lean()
+    const folder = await Folder.findOne({ _id: req.params.id, user: req.user.id })
+      .select('name createdAt updatedAt')
+      .lean();
     
     if (!folder) {
       return res.status(404).json({ message: "Folder not found" });
     }
 
-    // Get links in this folder
-    const links = await Link.find({ folder: folder._id, user: req.user.id }).sort({ createdAt: -1 });
+    // Optimizar: obtener links con select() y lean() para mejor rendimiento
+    const links = await Link.find({ folder: req.params.id, user: req.user.id })
+      .select('title url createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
 
-    res.json({ ...folder.toObject(), links });
+    res.json({ ...folder, links });
   } catch (error) {
     res.status(500).json({ message: "Error fetching folder", error: error.message });
   }
@@ -41,7 +51,14 @@ export const createFolder = async (req, res) => {
     });
 
     const folderSaved = await newFolder.save();
-    res.status(201).json(folderSaved);
+    // Retornar solo campos necesarios
+    res.status(201).json({
+      _id: folderSaved._id,
+      name: folderSaved.name,
+      user: folderSaved.user,
+      createdAt: folderSaved.createdAt,
+      updatedAt: folderSaved.updatedAt,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error creating folder", error: error.message });
   }

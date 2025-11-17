@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react"
+import {useState, useEffect, useMemo, useCallback} from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import { apiService, type Folder, type Link } from "../services/api"
@@ -20,56 +20,66 @@ export const LinkList = () => {
     const [folders, setFolders] = useState<Folder[]>([])
     const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null)
     const [folderLinks, setFolderLinks] = useState<Link[]>([])
+    const [loadingLinks, setLoadingLinks] = useState(false)
     const [newFolderName, setNewFolderName] = useState('')
     const [linkData, setLinkData] = useState({
         title: '',
         url: ''
     })
   
+    // Cargar carpetas solo una vez al montar
     useEffect(() => {
         fetchFolders()
     }, [])
 
+    // Cargar links cuando se selecciona una carpeta
     useEffect(() => {
-        if (selectedFolder) {
+        if (selectedFolder?._id) {
             fetchFolderLinks(selectedFolder._id)
+        } else {
+            setFolderLinks([])
         }
-    }, [selectedFolder])
+    }, [selectedFolder?._id])
   
-    const fetchFolders = async () => {
+    const fetchFolders = useCallback(async () => {
         try {
             const foldersData = await apiService.getFolders()
             setFolders(foldersData)
         } catch (error) {
             console.error('Error fetching folders:', error)
         }
-    }
+    }, [])
 
-    const fetchFolderLinks = async (folderId: string) => {
+    // Optimizar: usar endpoint directo de links en lugar de getFolder
+    const fetchFolderLinks = useCallback(async (folderId: string) => {
+        setLoadingLinks(true)
         try {
-            const folderData = await apiService.getFolder(folderId)
-            setFolderLinks(folderData.links || [])
+            const links = await apiService.getLinks(folderId)
+            setFolderLinks(links)
         } catch (error) {
             console.error('Error fetching folder links:', error)
+            setFolderLinks([])
+        } finally {
+            setLoadingLinks(false)
         }
-    }
+    }, [])
   
-    const handleCreateFolder = async () => {
+    const handleCreateFolder = useCallback(async () => {
         if (!newFolderName.trim()) return
         
         try {
             const newFolder = await apiService.createFolder({ name: newFolderName })
-            setFolders([...folders, newFolder])
+            setFolders(prev => [...prev, newFolder])
             setNewFolderName('')
         } catch (error) {
             console.error('Error creating folder:', error)
         }
-    }
+    }, [newFolderName])
 
-    const handleDeleteFolder = async (folderId: string) => {
+    const handleDeleteFolder = useCallback(async (folderId: string) => {
         try {
             await apiService.deleteFolder(folderId)
-            setFolders(folders.filter(f => f._id !== folderId))
+            setFolders(prev => prev.filter(f => f._id !== folderId))
             if (selectedFolder?._id === folderId) {
                 setSelectedFolder(null)
                 setFolderLinks([])
@@ -77,9 +87,9 @@ export const LinkList = () => {
         } catch (error) {
             console.error('Error deleting folder:', error)
         }
-    }
+    }, [selectedFolder])
   
-    const handleAddLink = async () => {
+    const handleAddLink = useCallback(async () => {
         if (!linkData.title || !linkData.url || !selectedFolder) return
         
         try {
@@ -88,35 +98,59 @@ export const LinkList = () => {
                 url: linkData.url,
                 folderId: selectedFolder._id
             })
-            setFolderLinks([...folderLinks, newLink])
+            setFolderLinks(prev => [...prev, newLink])
             setLinkData({ title: '', url: '' })
         } catch (error) {
             console.error('Error creating link:', error)
         }
-    }
+    }, [linkData, selectedFolder])
 
-    const handleDeleteLink = async (linkId: string) => {
+    const handleDeleteLink = useCallback(async (linkId: string) => {
         try {
             await apiService.deleteLink(linkId)
-            setFolderLinks(folderLinks.filter(l => l._id !== linkId))
+            setFolderLinks(prev => prev.filter(l => l._id !== linkId))
         } catch (error) {
             console.error('Error deleting link:', error)
         }
-    }
+    }, [])
 
-    const handleLogout = async () => {
+    const handleLogout = useCallback(async () => {
         await logout()
         navigate('/login')
-    }
+    }, [logout, navigate])
 
-    const getInitials = (name: string) => {
+    // Memoizar función para evitar recrearla en cada render
+    const getInitials = useCallback((name: string) => {
         return name
             .split(' ')
             .map(n => n[0])
             .join('')
             .toUpperCase()
             .slice(0, 2)
-    }
+    }, [])
+
+    // Memoizar datos transformados para evitar recalcular en cada render
+    const transformedLinks = useMemo(() => {
+        return folderLinks.map(l => ({ title: l.title, url: l.url }))
+    }, [folderLinks])
+
+    // Memoizar callback para delete link
+    const handleDeleteLinkByIndex = useCallback((index: number) => {
+        const link = folderLinks[index]
+        if (link?._id) {
+            handleDeleteLink(link._id)
+        }
+    }, [folderLinks, handleDeleteLink])
+
+    // Memoizar callback para setData
+    const handleSetLinkData = useCallback((newData: typeof linkData | ((prev: typeof linkData) => typeof linkData)) => {
+        const updated = typeof newData === 'function' 
+            ? newData(linkData)
+            : newData
+        setLinkData(updated)
+    }, [linkData])
+
+    const userInitials = useMemo(() => user ? getInitials(user.username) : 'U', [user, getInitials])
 
      return (
         <div className="relative min-h-screen">
@@ -143,7 +177,7 @@ export const LinkList = () => {
                     <div className="flex flex-col items-center bg-white shadow-sm rounded-xl p-5 text-center">
                         <Avatar className="h-16 w-16 mb-4">
                             <AvatarImage src="https://github.com/peduarte.png" alt={user?.username} />
-                            <AvatarFallback>{user ? getInitials(user.username) : 'U'}</AvatarFallback>
+                            <AvatarFallback>{userInitials}</AvatarFallback>
                         </Avatar>
                         <h1 className="text-xl font-semibold text-gray-800">
                             {user ? `I'm ${user.username}` : 'Welcome'}
@@ -246,30 +280,22 @@ export const LinkList = () => {
                                 <h2 className="font-semibold text-lg">Links en "{selectedFolder.name}"</h2>
                             </div>
                             
-                            <ShowLinks
-                                handleAddLink={handleAddLink}
-                                handleDeleteChange={(index: number) => {
-                                    const link = folderLinks[index]
-                                    if (link?._id) {
-                                        handleDeleteLink(link._id)
-                                    }
-                                }}
-                                data={{
-                                    links: folderLinks.map(l => ({ title: l.title, url: l.url })),
-                                    title: linkData.title,
-                                    url: linkData.url
-                                }}
-                                setData={(newData) => {
-                                    const updated = typeof newData === 'function' 
-                                        ? newData({
-                                            links: folderLinks.map(l => ({ title: l.title, url: l.url })),
-                                            title: linkData.title,
-                                            url: linkData.url
-                                        })
-                                        : newData
-                                    setLinkData({ title: updated.title, url: updated.url })
-                                }}
-                            />
+                            {loadingLinks ? (
+                                <div className="text-center py-8">
+                                    <p className="text-gray-500 text-sm">Cargando links...</p>
+                                </div>
+                            ) : (
+                                <ShowLinks
+                                    handleAddLink={handleAddLink}
+                                    handleDeleteChange={handleDeleteLinkByIndex}
+                                    data={{
+                                        links: transformedLinks,
+                                        title: linkData.title,
+                                        url: linkData.url
+                                    }}
+                                    setData={handleSetLinkData}
+                                />
+                            )}
                         </div>
                     )}
 

@@ -9,7 +9,11 @@ export const getLinks = async (req, res) => {
       query.folder = folderId;
     }
     
-    const links = await Link.find(query).sort({ createdAt: -1 });
+    // Optimizar: usar select() y lean() para mejor rendimiento
+    const links = await Link.find(query)
+      .select('title url folder createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(links);
   } catch (error) {
     res.status(500).json({ message: "Error fetching links", error: error.message });
@@ -50,7 +54,15 @@ export const createLink = async (req, res) => {
     });
 
     const linkSaved = await newLink.save();
-    res.status(201).json(linkSaved);
+    // Retornar solo campos necesarios
+    res.status(201).json({
+      _id: linkSaved._id,
+      title: linkSaved.title,
+      url: linkSaved.url,
+      folder: linkSaved.folder,
+      createdAt: linkSaved.createdAt,
+      updatedAt: linkSaved.updatedAt,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error creating link", error: error.message });
   }
