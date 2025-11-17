@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Button } from "./ui/button"
 import {
   Dialog,
@@ -19,7 +20,7 @@ type Link = {
 };
 
 type ShowLinksProps = {
-  handleAddLink: (e: React.FormEvent<HTMLButtonElement>) => void;
+  handleAddLink: () => void | Promise<void>;
   handleDeleteChange: (index: number) => void;
   data: {
     title: string;
@@ -34,6 +35,12 @@ type ShowLinksProps = {
 };
 
 export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDeleteChange, data, setData}) => {
+  const [open, setOpen] = useState(false)
+
+  const handleAdd = async () => {
+    await handleAddLink()
+    setOpen(false)
+  }
 
     return (
         <div className="space-y-4">
@@ -66,7 +73,7 @@ export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDelete
             </div>
 
             {/* Add Link Button */}
-            <Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <Button className="w-full" variant="outline">+ Add new link</Button>
                 </DialogTrigger>
@@ -103,7 +110,7 @@ export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDelete
                         <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
                         </DialogClose>
-                        <Button onClick={handleAddLink} type="button">Add</Button>
+                        <Button onClick={handleAdd} type="button">Add</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
