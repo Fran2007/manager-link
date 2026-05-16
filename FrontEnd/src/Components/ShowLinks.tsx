@@ -19,22 +19,20 @@ type Link = {
   url: string;
 };
 
+type LinkFormData = {
+  title: string;
+  url: string;
+};
+
 type ShowLinksProps = {
   handleAddLink: () => void | Promise<void>;
   handleDeleteChange: (index: number) => void;
-  data: {
-    title: string;
-    url: string;
-    links: Link[];
-  };
-  setData: React.Dispatch<React.SetStateAction<{
-    title: string;
-    url: string;
-    links: Link[];
-  }>>;
+  links: Link[];
+  formData: LinkFormData;
+  setFormData: React.Dispatch<React.SetStateAction<LinkFormData>>;
 };
 
-export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDeleteChange, data, setData}) => {
+export const ShowLinks: React.FC<ShowLinksProps> = ({ handleAddLink, handleDeleteChange, links, formData, setFormData }) => {
   const [open, setOpen] = useState(false)
 
   const handleAdd = async () => {
@@ -46,10 +44,10 @@ export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDelete
         <div className="space-y-4">
             {/* Links List */}
             <div className="space-y-3">
-                {data.links.length === 0 && (
+                {links.length === 0 && (
                     <p className="text-center text-gray-500 text-sm py-4">No links added yet</p>
                 )}
-                {data.links.map((link, index) => (
+                {links.map((link, index) => (
                     <div
                         key={index}
                         className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -90,8 +88,8 @@ export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDelete
                             <Input
                                 id="title"
                                 name="title"
-                                value={data.title}
-                                onChange={(e) => setData({ ...data, title: e.target.value })}
+                                value={formData.title}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
                                 placeholder="Example"
                             />
                         </div>
@@ -100,8 +98,8 @@ export const ShowLinks: React.FC<ShowLinksProps> = ({handleAddLink, handleDelete
                             <Input
                                 id="url"
                                 name="url"
-                                value={data.url}
-                                onChange={(e) => setData({ ...data, url: e.target.value })}
+                                value={formData.url}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, url: e.target.value }))}
                                 placeholder="https://example.com"
                             />
                         </div>

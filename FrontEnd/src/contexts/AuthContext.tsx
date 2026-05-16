@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { apiService, type User, type LoginData, type RegisterData } from '../services/api';
 
 interface AuthContextType {
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           try {
             const userData = await apiService.verifyToken();
             setUser(userData);
-          } catch (error) {
+          } catch {
             // Token is invalid, clear it
             localStorage.removeItem('token');
             setUser(null);
@@ -57,21 +58,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const login = async (data: LoginData) => {
-    try {
-      const userData = await apiService.login(data);
-      setUser(userData);
-    } catch (error) {
-      throw error;
-    }
+    const userData = await apiService.login(data);
+    setUser(userData);
   };
 
   const register = async (data: RegisterData) => {
-    try {
-      const userData = await apiService.register(data);
-      setUser(userData);
-    } catch (error) {
-      throw error;
-    }
+    const userData = await apiService.register(data);
+    setUser(userData);
   };
 
   const logout = async () => {

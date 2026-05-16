@@ -27,20 +27,6 @@ export const LinkList = () => {
         url: ''
     })
   
-    // Cargar carpetas solo una vez al montar
-    useEffect(() => {
-        fetchFolders()
-    }, [])
-
-    // Cargar links cuando se selecciona una carpeta
-    useEffect(() => {
-        if (selectedFolder?._id) {
-            fetchFolderLinks(selectedFolder._id)
-        } else {
-            setFolderLinks([])
-        }
-    }, [selectedFolder?._id])
-  
     const fetchFolders = useCallback(async () => {
         try {
             const foldersData = await apiService.getFolders()
@@ -63,6 +49,18 @@ export const LinkList = () => {
             setLoadingLinks(false)
         }
     }, [])
+
+    useEffect(() => {
+        fetchFolders()
+    }, [fetchFolders])
+
+    useEffect(() => {
+        if (selectedFolder?._id) {
+            fetchFolderLinks(selectedFolder._id)
+        } else {
+            setFolderLinks([])
+        }
+    }, [selectedFolder?._id, fetchFolderLinks])
   
     const handleCreateFolder = useCallback(async () => {
         if (!newFolderName.trim()) return
@@ -141,14 +139,6 @@ export const LinkList = () => {
             handleDeleteLink(link._id)
         }
     }, [folderLinks, handleDeleteLink])
-
-    // Memoizar callback para setData
-    const handleSetLinkData = useCallback((newData: typeof linkData | ((prev: typeof linkData) => typeof linkData)) => {
-        const updated = typeof newData === 'function' 
-            ? newData(linkData)
-            : newData
-        setLinkData(updated)
-    }, [linkData])
 
     const userInitials = useMemo(() => user ? getInitials(user.username) : 'U', [user, getInitials])
 
@@ -288,12 +278,9 @@ export const LinkList = () => {
                                 <ShowLinks
                                     handleAddLink={handleAddLink}
                                     handleDeleteChange={handleDeleteLinkByIndex}
-                                    data={{
-                                        links: transformedLinks,
-                                        title: linkData.title,
-                                        url: linkData.url
-                                    }}
-                                    setData={handleSetLinkData}
+                                    links={transformedLinks}
+                                    formData={linkData}
+                                    setFormData={setLinkData}
                                 />
                             )}
                         </div>
