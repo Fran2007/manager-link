@@ -1,0 +1,12 @@
+{
+  "name": "manager-links",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix FrontEnd",
+    "dev:front": "npm run dev --prefix FrontEnd",
+    "dev:back": "npm run dev --prefix BackEnd",
+    "build": "npm run build --prefix FrontEnd",
+    "lint": "npm run lint --prefix FrontEnd",
+    "install:all": "npm install --prefix FrontEnd && npm install --prefix BackEnd"
+  }
+}

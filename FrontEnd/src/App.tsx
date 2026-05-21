@@ -1,10 +1,10 @@
-import './App.css'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
-import { ProtectedRoute } from './Components/ProtectedRoute'
-import { Login } from './Components/Login'
-import { Register } from './Components/Register'
-import { LinkList } from './Components/LinkList'
+import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./Components/ProtectedRoute";
+import { Login } from "./Components/Login";
+import { Register } from "./Components/Register";
+import { LinkList } from "./Components/LinkList";
 
 function App() {
   return (
@@ -17,7 +17,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <div className='kindle-screen bg-white min-h-screen p-4'>
+                <div className="kindle-screen bg-white min-h-screen p-4">
                   <LinkList />
                 </div>
               </ProtectedRoute>
@@ -27,7 +27,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

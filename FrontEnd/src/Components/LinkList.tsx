@@ -27,20 +27,6 @@ export const LinkList = () => {
         url: ''
     })
   
-    // Cargar carpetas solo una vez al montar
-    useEffect(() => {
-        fetchFolders()
-    }, [])
-
-    // Cargar links cuando se selecciona una carpeta
-    useEffect(() => {
-        if (selectedFolder?._id) {
-            fetchFolderLinks(selectedFolder._id)
-        } else {
-            setFolderLinks([])
-        }
-    }, [selectedFolder?._id])
-  
     const fetchFolders = useCallback(async () => {
         try {
             const foldersData = await apiService.getFolders()
@@ -63,6 +49,18 @@ export const LinkList = () => {
             setLoadingLinks(false)
         }
     }, [])
+
+    useEffect(() => {
+        fetchFolders()
+    }, [fetchFolders])
+
+    useEffect(() => {
+        if (selectedFolder?._id) {
+            fetchFolderLinks(selectedFolder._id)
+        } else {
+            setFolderLinks([])
+        }
+    }, [selectedFolder?._id, fetchFolderLinks])
   
     const handleCreateFolder = useCallback(async () => {
         if (!newFolderName.trim()) return
