@@ -1,9 +1,14 @@
 import jwt from "jsonwebtoken";
 import { TOKEN_SECRET } from "../config.js";
 import User from "../models/User.model.js";
+import { isDbConnected } from "../db.js";
 
 export const authRequired = async (req, res, next) => {
   try {
+    if (!isDbConnected()) {
+      return res.status(503).json({ message: "Database not connected" });
+    }
+
     let token = req.cookies?.token;
     
     // If no cookie, try Authorization header
